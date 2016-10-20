@@ -64,7 +64,16 @@
 
 \section{\textit{mfind} and Thread Safety} 
 
-The scheme in figure 1 shows the most important aspects of the mfind system and how it was implemented here. It can be basically seen as a producer consumer system, however, each thread can be both producer and consumer. The most important source of synchronization is the semaphore which distributes the jobs to the threads. When there are no more jobs available. The `do while' loop looks futile on the first view, however, new jobs can be added after passing the `no wait' semaphore until checking the value of the semaphore in the `while' expression.
+The scheme in figure \ref{fig:scheme} shows the most important aspects of the mfind
+system and how it was implemented here. It can be basically seen as a
+producer-consumer system, however, each thread can be both producer
+and consumer. The most important source of synchronization is a
+semaphore \cite[chapter 15.8] {stevensrago2013} which distributes the jobs to the
+threads. When there are no more jobs available, the thread
+subsequently terminates. The `do while' loop looks futile on the first
+view, however, new jobs can be added after passing the `no wait'
+semaphore until checking the value of the semaphore in the `while'
+expression which will result in another round to catch a job. 
 
 \begin{figure}
 \centering
@@ -73,11 +82,25 @@ The scheme in figure 1 shows the most important aspects of the mfind system and 
 \label{fig:scheme}
 \end{figure}
 
-The current construction is thread safe: The last thread in the loop can not leave until all jobs, also freshly self created are processed. In certain cases, this could lead to an uneven workload. This could be addressed by further synchronizing the threads, however this would also affect performance for most general cases. 
+The current construction is thread safe: The last thread in the loop
+can not leave until all jobs, also freshly self created are
+processed. In certain cases, this could lead to an uneven
+workload as threads can leave while it's still possible that new jobs
+are generated. This could be addressed by further synchronizing the
+threads, forexample with a mutex. That would however also affect
+performance for the most general cases. During testing the current
+code, it happend rarely that the distribution of tasks was not even
+between the different threads.   
 
 
 \section{Performance Assessment}
-
+To assess the performance of the presented implementation, it was
+batched with the `time' function on itchy.cs.umu.se. As instructed, 2
+to 10 threads were run each 10 times on \textit{/pkg/ comsol}. The
+results were written into a textfile, that was then imported to R
+\cite{rlanguage}, parsed and plotted as shown in figure
+\ref{fig:perform}. 
+ 
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{perform.pdf}
@@ -85,7 +108,21 @@ The current construction is thread safe: The last thread in the loop can not lea
 \label{fig:perform}
 \end{figure}
 
+It was chosen to plot real, user and system time separate. As it can
+be seen in uppermost graph of figure \ref{fig:perform}, the `real'
+time decreases for increased number of cores. However, it is also
+obvious from the plot, that the line flattens out and would eventually
+start to increase again when using a too high number of threads. In
+single process experiments, it was estimated that the lowest point,
+hence the shortest run time is achieved at around 14 threads (not
+visible in the graph).
 
+The middle graph shows `user' time which increases steadily, the same
+is true for the lowermost graph that shows `system' time. While real
+time shows the time which actually passes, `system' and `user' time
+account time for each thread used and sum it up. The time increase
+correlated with the higher number of threads for `system' and `user'
+time shows that more `overhead' time is spend to coordinate the threads.  
 
 
 \addcontentsline{toc}{section}{\refname}
